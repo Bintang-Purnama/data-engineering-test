@@ -1,43 +1,88 @@
-# 99 Group Data Engineering Technical Test
+# 99 Group Data Engineering Technical Test - Solution
 
-## Introduction
+## 📋 Overview
+This repository contains the solution for the ELT Data Pipeline technical test. The program is designed to orchestrate the execution of SQL files by automatically detecting their dependencies and executing them in the correct topological order.
 
-Part of 99 Groups data engineers tasks are to ensure that data pipelines are run in the correct order and in the most timely, reliable and scalable fashion. One example of this is our ELT data pipeline.
+**Key Features:**
+* **Automatic Dependency Detection:** Uses Regex to parse SQL files and identify table dependencies (`tmp.*` or `final.*`).
+* **Topological Sorting:** Determines the correct execution order (DAG) to ensure tables are created before they are queried.
+* **Parallel Execution (Bonus):** Implements a "Level-by-Level" batch execution using `ThreadPoolExecutor`, allowing independent tasks to run simultaneously for maximum efficiency.
+* **Robust Unit Testing:** Includes tests for dependency parsing and sorting logic.
 
-In the ELT data pipeline, data from different tables in the application database are first ingested _as-is_ into its respective source tables in the data warehouse. 
+## 🛠️ Prerequisites
+* Python 3.11
+* No external libraries required (uses only standard libraries: `os`, `re`, `glob`, `time`, `concurrent.futures`, `unittest`).
 
-Thereafter, data in the source tables are cleaned, transformed, combined and stored into a final table (i.e. a datamart) where data analysts and business users will take their insights from. All these steps are done via SQL and executed via its respective SQL files.
+## 🚀 How to Run
 
-In this test, you'll get a go at creating a part of this ELT data pipeline.
+### 1. Run the Data Pipeline (Main Program)
+To execute the SQL pipeline with parallel processing simulation:
 
-## Assignment Brief
+```bash
+python main.py
 
-In this assignment, you will create a program to execute different SQL files in the correct order. You can write your program in any language but note that we use mostly Python and Java in our stack.
+### 2. Run Unit Test 
+To verify th logic ( Regex parser & Sorting Algorithm ):
+python tests.py
 
-__You are not allowed to use any specialized packages for this test. All functions and classes in this test should be written from scratch.__
+#🧠 Code Explanation
+main.py (Orchestrator)
+extract_dependencies(file_path):
 
-In the [sql](./sql) folder, you'll find 3 subfolders related to the steps detailed in our introduction of the ELT data pipeline:
+Reads the SQL file content.
 
-* [source](./sql/source) contains the source tables in the data warehouse.
+Uses Regex r'(tmp|final)\.(\w+)' to find table references.
 
-* [tmp](./sql/tmp) contains SQL scripts used to clean, transform and combine the data in the data warehouse. You can assume that running a file in this folder will automatically create a table called `tmp.<sqlfile_basename>` in the data warehouse containing data from its sql logic.
+Returns a list of dependencies (e.g., ['tmp.agents', 'tmp.photos']).
 
-* [final](./sql/final) contains SQL scripts used to create the final datamart. You can assume that running a file in this folder will automatically create a table called `final.<sqlfile_basename>` in the data warehouse containing data from its sql logic.
+execute_pipeline(file_map):
 
-Note that each SQL file contains some dependencies that may require running of some other SQL files beforehand. Hence, you are required to write a program which contains functions to:
+Implements Kahn's Algorithm for Topological Sorting dynamically.
 
-1. determine the dependency file(s) of each SQL file. You are required to print/show these dependencies as part of documenting the output.
+Identifies tasks with in_degree = 0 (no pending dependencies).
 
-2. run the SQL files in the correct order, in accordance to their dependencies. To simulate running of an SQL file, you can use `time.sleep(2)`. You are required to print/show the run order log as part of documenting the output.
+Executes them in parallel using ThreadPoolExecutor.
 
-3. __(Bonus)__ Do step (2) but execute the files in parallel while still respecting the order of dependencies.
+Updates the dependency graph and repeats for the next batch.
+
+tests.py (Unit Tests)
+test_extract_dependencies: Creates a dummy SQL file to verify if the Regex correctly captures table names (handling case sensitivity and backticks).
+
+test_topological_sort: Verifies the sorting logic using a mock dependency graph (A->B->C) to ensure the order is strictly C -> B -> A.
+
+### Execution Logs 
+--- LAPORAN DETEKSI DEPENDENSI ---
+🔗 final.listings_performances  BUTUH: ['tmp.listing_performances', 'tmp.listings_features']
+🔗 tmp.listing_performances     BUTUH: ['tmp.enquiries_per_day', 'tmp.page_clicks_per_day']
+🔗 tmp.listings_features        BUTUH: ['tmp.agents', 'tmp.listing_photos_quality']  
+ Deteksi Sukses: 3 file memiliki ketergantungan.
+----------------------------------------
+ MEMULAI PIPELINE PARALEL...
+
+ Batch Baru: ['tmp.agents', 'tmp.enquiries_per_day', 'tmp.listing_photos_quality', 'tmp.page_clicks_per_day']
+    [Mulai] tmp.agents...
+    [Mulai] tmp.enquiries_per_day...
+    [Mulai] tmp.listing_photos_quality...
+    [Mulai] tmp.page_clicks_per_day...
+    [Selesai] tmp.enquiries_per_day
+    [Selesai] tmp.agents
+    [Selesai] tmp.page_clicks_per_day    [Selesai] tmp.listing_photos_quality        
 
 
+ SEMUA SELESAI dalam 2.00 detik.
 
-## Deliverables
+# Test Output ( python tests.py)
 
-1. Ensure that your project has clear instructions on how to run them. Do also give a brief explanation on what you've coded and the results and include the print/logs required by the Assignment Brief.
+--- [TEST 1] Regex Dependensi ---
+   Hasil deteksi: ['final.summary', 'tmp.orders']
 
-2. We expect at least some unit tests, especially on critical functions of your codes.
+--- [TEST 2] Logika Pengurutan (Sequential) ---
+   Hasil urutan: ['user', 'transaksi', 'laporan']
+.
+----------------------------------------------------------------------
+Ran 2 tests in 0.002s
 
-3. Commit your project into a github private repository and share it with @luqmansrx. Send a reply email to the recruiter to also let them know that you're done.
+OK
+
+-----------------------------###########################-----------------------
+### 🎉 Selesai!
