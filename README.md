@@ -1,4 +1,4 @@
-# 99 Group Data Engineering Technical Test - Solution
+# Data Engineering Technical Test - Solution
 
 ## 📋 Overview
 This repository contains the solution for the ELT Data Pipeline technical test. The program is designed to orchestrate the execution of SQL files by automatically detecting their dependencies and executing them in the correct topological order.
